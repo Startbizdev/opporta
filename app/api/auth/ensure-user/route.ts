@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ensureUserByEmail } from "@/lib/session-user";
+
+function prismaErrorPayload(error: unknown): { status: number; body: object } {
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return {
+      status: 503,
+      body: {
+        error:
+          "Base de données injoignable. Vérifie DATABASE_URL sur Vercel (URL « pooled » Neon, sslmode=require). Essaie sans channel_binding dans l’URL.",
+        code: error.errorCode,
+      },
+    };
+  }
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return {
+      status: 503,
+      body: {
+        error: `Erreur base de données (${error.code}). Migrations appliquées sur cette DB ?`,
+        code: error.code,
+      },
+    };
+  }
+  return {
+    status: 500,
+    body: { error: "Erreur serveur" },
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,6 +62,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(user);
   } catch (error) {
     console.error("ensure-user:", error);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+    const { status, body } = prismaErrorPayload(error);
+    return NextResponse.json(body, { status });
   }
 }
