@@ -2,9 +2,19 @@
 
 import { useState } from "react";
 import { LayoutGrid } from "lucide-react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+
+async function readErrorMessage(res: Response): Promise<string> {
+  try {
+    const data = (await res.json()) as { error?: string };
+    return data.error?.trim() || `Erreur ${res.status}`;
+  } catch {
+    return `Erreur ${res.status}`;
+  }
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("flo@opporta.fr");
@@ -15,12 +25,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await fetch("/api/auth/send-magic-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
       const sync = await fetch("/api/auth/ensure-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -28,7 +32,10 @@ export default function LoginPage() {
       });
 
       if (!sync.ok) {
-        throw new Error("Synchronisation du compte impossible");
+        const msg = await readErrorMessage(sync);
+        toast.error(`Synchronisation du compte : ${msg}`);
+        setLoading(false);
+        return;
       }
 
       const profile = await sync.json();
@@ -39,6 +46,7 @@ export default function LoginPage() {
       window.location.href = "/";
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Connexion impossible. Réessaie dans un instant.");
       setLoading(false);
     }
   };
@@ -53,7 +61,7 @@ export default function LoginPage() {
           OPPORTA
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-          Fil d’opportunités business — connexion sécurisée par e-mail
+          Fil d’opportunités business — connexion test (sans vérification e-mail)
         </p>
       </div>
 

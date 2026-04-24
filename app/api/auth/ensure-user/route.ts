@@ -11,6 +11,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "E-mail invalide" }, { status: 400 });
     }
 
+    const allowed = process.env.DEMO_LOGIN_EMAILS?.split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (
+      allowed &&
+      allowed.length > 0 &&
+      !allowed.includes(email.toLowerCase())
+    ) {
+      return NextResponse.json({ error: "E-mail non autorisé" }, { status: 403 });
+    }
+
     const id = await ensureUserByEmail(email);
     const user = await prisma.user.findUnique({
       where: { id },
