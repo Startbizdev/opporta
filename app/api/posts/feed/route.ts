@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/app/generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { decodeFeedCursor, type FeedCursor } from "@/lib/feed-cursor";
 
 const MIN_LIMIT = 1;

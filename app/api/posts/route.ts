@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculatePostCompleteness, calculateScore } from "@/lib/scoring";
-import { Prisma } from "@/app/generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { resolveSessionUserId } from "@/lib/session-user";
 import { z } from "zod";
 

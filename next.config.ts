@@ -4,10 +4,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
-  // Prisma : sortie custom hors node_modules — forcer l’inclusion du moteur .node dans les lambdas Vercel
-  outputFileTracingIncludes: {
-    "/api/**/*": ["./app/generated/prisma/**/*"],
-  },
+  serverExternalPackages: ["@prisma/client", "prisma"],
 };
 
 export default nextConfig;

@@ -7,16 +7,22 @@ export async function GET() {
     await prisma.$queryRaw`SELECT 1`;
     return NextResponse.json({ ok: true, db: "up" });
   } catch (e) {
-    const err = e as { message?: string; code?: string; name?: string };
+    const err = e as {
+      message?: string;
+      code?: string;
+      name?: string;
+      errorCode?: string;
+    };
     console.error("health/db:", e);
     return NextResponse.json(
       {
         ok: false,
         db: "down",
-        code: err.code,
+        prismaCode: err.errorCode ?? err.code,
         name: err.name,
+        message: err.message?.slice(0, 280),
         hint:
-          "Vérifie DATABASE_URL sur Vercel (URL pooler Neon, sslmode=require ; retirer channel_binding si besoin).",
+          "Si P1001/P1017 : URL Neon pooler + sslmode=require. Client Prisma doit être @prisma/client (node_modules).",
       },
       { status: 503 }
     );
