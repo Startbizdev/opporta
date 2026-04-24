@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  emailVerified DateTime?
+  bio           String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  posts         Post[]
+  interactions  Interaction[]
+  conversationsA Conversation[] @relation("userA")
+  conversationsB Conversation[] @relation("userB")
+  messages      Message[]
+  creditBalance CreditBalance?
+
+  @@index([createdAt])
+}
+
+model CreditBalance {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  amount    Int      @default(3)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  type        String   // REQUEST or OFFER
+  title       String
+  description String
+  category    String
+  budgetMin   Int?
+  budgetMax   Int?
+  location    String?
+  status      String   @default("ACTIVE")
+  views       Int      @default(0)
+  score       Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  interactions Interaction[]
+  conversations Conversation[]
+  messages    Message[]
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([score])
+  @@index([userId])
+  // Fil infinite scroll : status + tri score / date / id (tie-breaker)
+  @@index([status, score(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
+}
+
+model Interaction {
+  id        String   @id @default(cuid())
+  type      String   // reply, save, contact
+  createdAt DateTime @default(now())
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, type])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userAId String
+  userA   User   @relation("userA", fields: [userAId], references: [id], onDelete: Cascade)
+
+  userBId String
+  userB   User   @relation("userB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  @@unique([postId, userAId, userBId])
+  @@index([postId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+}
