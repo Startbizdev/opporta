@@ -1,6 +1,17 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resendClient: Resend | null = null;
+
+function getResend(): Resend {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+  if (!resendClient) {
+    resendClient = new Resend(key);
+  }
+  return resendClient;
+}
 
 export async function sendVerificationEmail(
   email: string,
@@ -9,7 +20,7 @@ export async function sendVerificationEmail(
   const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: "noreply@opporta.app",
       to: email,
       subject: "Vérifiez votre adresse email - OPPORTA",
@@ -32,7 +43,7 @@ export async function sendReplyNotification(
   senderName: string
 ) {
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: "noreply@opporta.app",
       to: recipientEmail,
       subject: `Nouvelle réponse sur: ${postTitle}`,
